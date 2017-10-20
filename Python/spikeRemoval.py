@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
-
-This is a temporary script file.
+This script searches a directory and reads in the ASCII data files produced by 
+WinSpec, corrects for cosmic ray spikes with a rolling median filter, and 
+replaces the original file with the updated file if spikes are found. 
+The original file is placed in a new directory called preSpikeCorr
 """
+#import os
+import os
+
+#Set directory here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+os.chdir("/Users/pohno/Box Sync/Science/Data/SFG/Solstice/10162017/Low Salt/run2")
+
 #import numpy for array functionality
 import numpy as np
 
@@ -18,11 +25,6 @@ import matplotlib.pyplot as plt
 
 #import math for floor
 import math
-
-#import os
-import os
-
-
 
 def correctSpectrum(name):
 
@@ -63,7 +65,7 @@ def correctSpectrum(name):
     
     
     #threshold past which if it is further from median it will sense that it is a spike
-    threshold = 100
+    threshold = 200
     
     #empty array to hold zero or one if point is a spike
     spike = np.zeros(len(differences),)
@@ -178,8 +180,9 @@ def correctSpectraInDir():
     
     return
 
+
+#run it
 correctSpectraInDir()
- 
 
 
 
