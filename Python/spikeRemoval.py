@@ -9,7 +9,7 @@ The original file is placed in a new directory called preSpikeCorr
 import os
 
 #Set directory here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-os.chdir("/Users/pohno/Box Sync/Science/Data/SFG/Solstice/10162017/Low Salt/run2")
+os.chdir("/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11012017/fusedsilica/pinene")
 
 #import numpy for array functionality
 import numpy as np
