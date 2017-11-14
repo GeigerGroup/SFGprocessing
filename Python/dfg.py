@@ -13,7 +13,10 @@ import numpy as np
 
 class DFG():
     
-    def __init__(self,path):
+    def __init__(self,path,name):
+        
+        #add name
+        self.name = name
         
         #read in file
         file = open(path,'r')
