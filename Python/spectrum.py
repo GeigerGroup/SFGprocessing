@@ -28,6 +28,12 @@ import math
 #import fullwn array
 from fullwn import FullWN
 
+#import scipy 
+from scipy.ndimage.filters import gaussian_filter1d
+
+#import copy for deep copying
+import copy
+
 class Spectrum():
     
     def __init__(self,path):
@@ -111,13 +117,26 @@ class Spectrum():
         plt.figure()
         for dfg in self.dfgsFull:
             plt.plot(self.fullwn,dfg.counts)
+            
+            
+    def plotSmoothRawDFGs(self):
+        
+        plt.figure()
+
+            
+        for dfg in self.dfgsFull:
+            plt.plot(self.fullwn,dfg.counts,'ro')
+            
+        for dfg in self.dfgsSmoothedFull:
+            plt.plot(self.fullwn,dfg.counts,'b')
+        
         
 
     #find and subtract correct background        
     def subtractBGs(self):
         
         #create list to hold pre-bg subtracted dfgs
-        self.dfgsRaw = list(self.dfgs)
+        self.dfgsRaw = copy.deepcopy(self.dfgs)
         
         #go through each dfg
         for dfg in self.dfgs:
@@ -140,6 +159,47 @@ class Spectrum():
                 print("No bg found for dfg",dfg.name)
                    
             
+            
+    def smoothDFGs(self,sigma=5):
+        self.dfgsSmoothedFull = copy.deepcopy(self.dfgsFull)
+        
+        for dfg in self.dfgsSmoothedFull:
+            dfg.counts = gaussian_filter1d(dfg.counts,sigma)
+    
+    def findTruncateIndices(self,threshold=0.05):
+        
+        #create list to hold indices
+        self.truncateIndices = []
+        
+        #go through each dfg
+        for dfg in self.dfgsSmoothedFull:
+            
+            #find max
+            maxVal = dfg.counts.max()
+            
+            #find index of the max
+            maxIndex = dfg.counts.argmax()
+            
+            #find left and right indexes
+            leftIndex = (np.abs(dfg.counts[:maxIndex] - maxVal*threshold)).argmin()
+            rightIndex = maxIndex+(np.abs(dfg.counts[maxIndex:] - maxVal*threshold)).argmin()
+            
+            #add the found values to the list
+            self.truncateIndices = self.truncateIndices + [[leftIndex,rightIndex]]
+            
+    def truncateFullDFGs(self):
+        for i,dfg in enumerate(self.dfgsSmoothedFull):
+            
+            dfg.counts[:self.truncateIndices[i][0]] = 0
+            dfg.counts[self.truncateIndices[i][1]:] = 0
+            
+    def plotTruncatedDFGs(self):
+        plt.figure()
+        for dfg in self.dfgsSmoothedFull:
+            plt.plot(self.fullwn,dfg.counts,'b')
+        
+            
+
     #remove all CRs for each         
     def removeCRs(self,threshold=200):
 
@@ -233,7 +293,7 @@ class Spectrum():
         #for 655 add 409 before
         
         #copy dfgs into new list
-        self.dfgsFull = list(self.dfgs)
+        self.dfgsFull = copy.deepcopy(self.dfgs)
         
         for dfg in self.dfgsFull:
             

@@ -14,12 +14,22 @@ gold = Spectrum(path)
 
 gold.subtractBGs()
 
-gold.plotDFGs()
+#gold.plotDFGs()
 
 gold.padDFGs()
 
-gold.plotFullDFGs()
+#gold.plotFullDFGs()
 
 gold.sumDFGs()
 
-gold.plotDFGsum()
+#gold.plotDFGsum()
+
+gold.smoothDFGs(5)
+
+gold.plotSmoothRawDFGs()
+
+gold.findTruncateIndices()
+
+gold.truncateFullDFGs()
+
+gold.plotTruncatedDFGs()

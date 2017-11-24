@@ -41,3 +41,5 @@ class DFG():
     def convertWLtoWN(self,wlArray,visWL):
         visWN = 10**7/visWL
         return 10**7/wlArray - visWN
+    
+    
