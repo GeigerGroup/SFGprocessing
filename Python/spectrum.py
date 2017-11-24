@@ -19,6 +19,15 @@ import matplotlib.pyplot as plt
 #import pandas for rolling median function
 import pandas
 
+#import numpy
+import numpy as np
+
+#import math
+import math
+
+#import fullwn array
+from fullwn import FullWN
+
 class Spectrum():
     
     def __init__(self,path):
@@ -35,155 +44,216 @@ class Spectrum():
 
         #go through each file/directory
         for f in os.listdir():
+            
+            #check if its a .txt file
+            if f[-4:] == '.txt':
+                #look at name of file/folder
+                name = f.split('.')[0]
         
-            #look at name of file/folder
-            name = f.split('.')[0]
-        
-            if name.isdigit():
+                if name.isdigit():
                 
-                self.dfgs = self.dfgs + [DFG(path + '/' + f,name)]
-            elif name[:2] == 'bg':
+                    self.dfgs = self.dfgs + [DFG(path + '/' + f,name)]
+                elif name[-2:] == 'bg':
                 
-                self.bgs = self.bgs + [DFG(path + '/' + f,name)]
+                    self.bgs = self.bgs + [DFG(path + '/' + f,name)]
                 
         #sort by name
         self.dfgs.sort(key=lambda x: x.name)
         self.bgs.sort(key=lambda x: x.name)
         
+        #create array for fullwn
+        fullwn = FullWN()
+        
+        self.fullwn = fullwn.fullwn
         
         
+    #print each DFG    
     def printDFGs(self):
         for dfg in self.dfgs:
             print(dfg.name)
-            
+    
+    #print each BG        
     def printBGs(self):
         for bg in self.bgs:
             print(bg.name)
-            
+    
+    #plot each DFG        
     def plotDFGs(self):
+        plt.figure()
+        for dfg in self.dfgs:
+            plt.plot(dfg.wn,dfg.counts)          
+            
+    def plotIndDFGs(self):     
         for dfg in self.dfgs:
             plt.figure()
             plt.plot(dfg.wn,dfg.counts)
             plt.title(dfg.name)
-            
+         
+    #plot each BG            
     def plotBGs(self):
+        plt.figure()
+        for bg in self.bgs:
+            plt.plot(bg.wn,bg.counts)
+            
+    def plotIndBGs(self):        
         for bg in self.bgs:
             plt.figure()
             plt.plot(bg.wn,bg.counts)
             plt.title(bg.name)
+            
+                
+    def plotDFGsum(self):
+        plt.figure()
+        plt.plot(self.fullwn,self.dfgSum)
+        
+    def plotFullDFGs(self):
+        
+        plt.figure()
+        for dfg in self.dfgsFull:
+            plt.plot(self.fullwn,dfg.counts)
+        
+
+    #find and subtract correct background        
+    def subtractBGs(self):
+        
+        #create list to hold pre-bg subtracted dfgs
+        self.dfgsRaw = list(self.dfgs)
+        
+        #go through each dfg
+        for dfg in self.dfgs:
+            
+            #identify background by finding median wavelength
+            dfgMedian = int(np.median(dfg.wl))
+            
+            #tracker for seeing if you found background
+            foundBG = False
+            
+            #go through each background, see if one with matching median is there
+            for bg in self.bgs:
+                if dfgMedian == int(np.median(bg.wl)):
+                    print("For dfg",dfg.name,"found",bg.name)
+                    dfg.counts = dfg.counts - bg.counts
+                    foundBG = True
+            
+            #if one wasn't found, print that        
+            if not foundBG:
+                print("No bg found for dfg",dfg.name)
+                   
+            
+    #remove all CRs for each         
+    def removeCRs(self,threshold=200):
+
+        #function that uses a median filter to identify a CR in a single DFG
+        def removeCRindDFG(dfg,threshold):
+            
+            #choose how big of a window for the rolling median
+            windowSize = 7
+            medians = pandas.Series(dfg.counts).rolling(window = windowSize,center=True).median()
+                    
+            #number of nan at beginning and end to replace
+            numRep = math.floor(windowSize/2)
+            
+            #replace beginning and end nan with the first/last computed value
+            for i in range(numRep):
+                medians[i] = medians[numRep]
+                medians[len(medians)-i-1] = medians[len(medians)-numRep-1]
+            
+            #find difference of each point with the median of its window
+            differences = dfg.counts-medians
+            
+            
+            #empty array to hold zero or one if point is a spike
+            spike = np.zeros(len(differences),)
+            for i in range(len(differences)):
+                if differences[i] > threshold:
+                    spike[i] = 1
+                    print("Spike found at point index",i,"with wavenumber",dfg.wn[i],"cm^-1")
+                  
+            #if there any spikes found
+            if np.sum(spike) > 0:
+                
+                #go through and replace the spike with the average on both sides
+                for i in range(len(spike)):          
+                    
+                    #if the point needs to be replaced
+                    if spike[i] == 1:
+                        
+                        #check up to five points to the left for the edge or for an ok point
+                        for j in range(5):
+                            if (i-1-j) < 0:
+                                left = [] #if its edge only take from right point
+                                break
+                            else:
+                                if spike[i-1-j] == 0:
+                                    left = dfg.counts[i-1-j] #or get the first acceptable point
+                                    break
+                        
+                        #check up to five points to the right for the edge or for an ok point        
+                        for j in range(5):
+                            if (i+j+1) >= len(spike):
+                                right = [] #if its edge only take from the left point
+                                break
+                            else:
+                                if spike[i+1+j] == 0:
+                                    right = dfg.counts[i+1+j] #or get the first acceptable point
+                                    break
+                        
+                        #get the average of the two or the value if its only one
+                        tempValArray = np.array([])
+                        tempValArray = np.append(tempValArray,left)
+                        tempValArray = np.append(tempValArray,right)
+                        ave = tempValArray.mean()
+                        
+                        #round down to integer number of counts
+                        dfg.counts[i] = math.floor(ave)
+            else:
+                print("No spikes found in " + dfg.name)
+            return
+        
+        #go through each dfg and remove CRs
+        for dfg in self.dfgs:
+            removeCRindDFG(dfg,threshold)
+             
+        #go through each bg and remove CRs
+        for bg in self.bgs:
+            removeCRindDFG(bg,threshold)
+            
+    def padDFGs(self):
+        
+        #dictionary to hold number of zeros to pad on either side
+        padding = dict(det620=[0,409],det625=[58,351],det630=[116,293],
+                       det635=[174,235],det640=[232,177],det645=[291,118],
+                       det655=[409,0])
+        #for 620 add 409 after
+        #for 625 add 58 before and 351 after
+        #for 630 add 116 before and 293 after
+        #for 635 add 174 before and 235 after
+        #for 640 add 232 before and 177 after
+        #for 645 add 291 before and 118 after
+        #for 655 add 409 before
+        
+        #copy dfgs into new list
+        self.dfgsFull = list(self.dfgs)
+        
+        for dfg in self.dfgsFull:
+            
+            key = 'det' + str(int(np.median(dfg.wl)))
+            dfg.counts = np.append(np.append(np.zeros(padding[key][0]),dfg.counts),
+                                   np.zeros(padding[key][1]))
+
+        
 
             
-#    def subtractBGs(self):
-#        
+    def sumDFGs(self):
+        
+        self.dfgSum = np.zeros(853)
+        
+        for dfg in self.dfgsFull:
+            self.dfgSum = self.dfgSum + dfg.counts
 
             
-#    def removeSpikes(self):    
-#        windowSize = 7
-#        medians = pandas.Series(counts).rolling(window = windowSize,center=True).median()
-#    
-#        
-#        #number of nan at beginning and end to replace
-#        numRep = math.floor(windowSize/2)
-#        
-#        #replace beginning and end nan with the first/last computed value
-#        for i in range(numRep):
-#            medians[i] = medians[numRep]
-#            medians[len(medians)-i-1] = medians[len(medians)-numRep-1]
-#        
-#        #find difference of each point with the median of its window
-#        differences = counts-medians
-#        
-#        
-#        #threshold past which if it is further from median it will sense that it is a spike
-#        threshold = 200
-#        
-#        #empty array to hold zero or one if point is a spike
-#        spike = np.zeros(len(differences),)
-#        for i in range(len(differences)):
-#            if differences[i] > threshold:
-#                spike[i] = 1
-#                print("Spike found at point index",i,"with wavelength",wavelengths[i])
-#        
-#    
-#        
-#        #if a peak is found
-#        if np.sum(spike) > 0:
-#            
-#            #read in datafile
-#            origFile = open(name,'r')
-#            
-#            
-#            #create new file to put modified
-#            newFile = open("temp" + name,"w")
-#            
-#            
-#            #create copy for new corrected array
-#            countsCORR = counts.copy()
-#        
-#            for i in range(len(spike)):
-#                
-#                singleLine = origFile.readline()
-#                
-#                
-#                #if the point needs to be replaced
-#                if spike[i] == 1:
-#                    
-#                    #check up to five points to the left for the edge or for an ok point
-#                    for j in range(5):
-#                        if (i-1-j) < 0:
-#                            left = [] #if its edge only take from right point
-#                            break
-#                        else:
-#                            if spike[i-1-j] == 0:
-#                                left = counts[i-1-j] #or get the first acceptable point
-#                                break
-#                    
-#                    #check up to five points to the right for the edge or for an ok point        
-#                    for j in range(5):
-#                        if (i+j+1) >= len(spike):
-#                            right = [] #if its edge only take from the left point
-#                            break
-#                        else:
-#                            if spike[i+1+j] == 0:
-#                                right = counts[i+1+j] #or get the first acceptable point
-#                                break
-#                    
-#                    #get the average of the two or the value if its only one
-#                    tempValArray = np.array([])
-#                    tempValArray = np.append(tempValArray,left)
-#                    tempValArray = np.append(tempValArray,right)
-#                    ave = tempValArray.mean()
-#                    
-#                    #round down to integer number of counts
-#                    countsCORR[i] = math.floor(ave)
-#                    
-#                    #get line from original file, modify
-#                    singleLineList = singleLine.split()
-#                    singleLineList[3] = str(int(ave))
-#                    singleLine = (singleLineList[0] + "\t" + 
-#                                  singleLineList[1] + "\t" + 
-#                                  singleLineList[2] + "\t" + 
-#                                  singleLineList[3] + "\n")
-#               
-#                #write original or modified line
-#                newFile.write(singleLine)
-#    
-#            
-#            
-#            #close new file
-#            newFile.close()
-#            
-#            #move original file to preSpikeCorr directory
-#            shutil.copy2(name,"preSpikeCorr")
-#            
-#            #rename the new temp file to the original name
-#            os.rename("temp"+name,name)
-#            
-#            #plot corrected value        
-#            plt.plot(wavelengths,countsCORR)
-#        else:
-#            print("No spikes found")
-#        return
+        
+    
 
             
                 
