@@ -45,6 +45,8 @@ class Spectrum():
         self.dfgs = []
         self.bgs = []
         
+        print('Importing DFGs and BGs...')
+        
         #change the directory to the specified directory
         os.chdir(path)
 
@@ -72,6 +74,12 @@ class Spectrum():
         
         self.fullwn = fullwn.fullwn
         
+        print('Has dfgs:')
+        self.printDFGs()
+        
+        print('Has bgs:')
+        self.printBGs()
+        
         
     #print each DFG    
     def printDFGs(self):
@@ -83,129 +91,39 @@ class Spectrum():
         for bg in self.bgs:
             print(bg.name)
     
-    #plot each DFG        
+    #plot all DFGs   
     def plotDFGs(self):
         plt.figure()
         for dfg in self.dfgs:
-            plt.plot(dfg.wn,dfg.counts)          
+            plt.plot(dfg.wn,dfg.counts)  
+        plt.title('DFGs')
             
+    #plot all BGs           
+    def plotBGs(self):
+        plt.figure()
+        for bg in self.bgs:
+            plt.plot(bg.wn,bg.counts)
+        plt.title('BGs')
+            
+    #plot ind DFGs
     def plotIndDFGs(self):     
         for dfg in self.dfgs:
             plt.figure()
             plt.plot(dfg.wn,dfg.counts)
             plt.title(dfg.name)
-         
-    #plot each BG            
-    def plotBGs(self):
-        plt.figure()
-        for bg in self.bgs:
-            plt.plot(bg.wn,bg.counts)
-            
+    
+    #plot ind BGs       
     def plotIndBGs(self):        
         for bg in self.bgs:
             plt.figure()
             plt.plot(bg.wn,bg.counts)
             plt.title(bg.name)
             
-                
-    def plotDFGsum(self):
-        plt.figure()
-        plt.plot(self.fullwn,self.dfgSum)
-        
-    def plotFullDFGs(self):
-        
-        plt.figure()
-        for dfg in self.dfgsFull:
-            plt.plot(self.fullwn,dfg.counts)
-            
-            
-    def plotSmoothRawDFGs(self):
-        
-        plt.figure()
-
-            
-        for dfg in self.dfgsFull:
-            plt.plot(self.fullwn,dfg.counts,'ro')
-            
-        for dfg in self.dfgsSmoothedFull:
-            plt.plot(self.fullwn,dfg.counts,'b')
-        
-        
-
-    #find and subtract correct background        
-    def subtractBGs(self):
-        
-        #create list to hold pre-bg subtracted dfgs
-        self.dfgsRaw = copy.deepcopy(self.dfgs)
-        
-        #go through each dfg
-        for dfg in self.dfgs:
-            
-            #identify background by finding median wavelength
-            dfgMedian = int(np.median(dfg.wl))
-            
-            #tracker for seeing if you found background
-            foundBG = False
-            
-            #go through each background, see if one with matching median is there
-            for bg in self.bgs:
-                if dfgMedian == int(np.median(bg.wl)):
-                    print("For dfg",dfg.name,"found",bg.name)
-                    dfg.counts = dfg.counts - bg.counts
-                    foundBG = True
-            
-            #if one wasn't found, print that        
-            if not foundBG:
-                print("No bg found for dfg",dfg.name)
-                   
-            
-            
-    def smoothDFGs(self,sigma=5):
-        self.dfgsSmoothedFull = copy.deepcopy(self.dfgsFull)
-        
-        for dfg in self.dfgsSmoothedFull:
-            dfg.counts = gaussian_filter1d(dfg.counts,sigma)
-    
-    def findTruncateIndices(self,threshold=0.05):
-        
-        #create list to hold indices
-        self.truncateIndices = []
-        
-        #go through each dfg
-        for dfg in self.dfgsSmoothedFull:
-            
-            #find max
-            maxVal = dfg.counts.max()
-            
-            #find index of the max
-            maxIndex = dfg.counts.argmax()
-            
-            #find left and right indexes
-            leftIndex = (np.abs(dfg.counts[:maxIndex] - maxVal*threshold)).argmin()
-            rightIndex = maxIndex+(np.abs(dfg.counts[maxIndex:] - maxVal*threshold)).argmin()
-            
-            #add the found values to the list
-            self.truncateIndices = self.truncateIndices + [[leftIndex,rightIndex]]
-            
-    def truncateFullDFGs(self):
-        for i,dfg in enumerate(self.dfgsSmoothedFull):
-            
-            dfg.counts[:self.truncateIndices[i][0]] = 0
-            dfg.counts[self.truncateIndices[i][1]:] = 0
-            
-    def plotTruncatedDFGs(self):
-        plt.figure()
-        for dfg in self.dfgsSmoothedFull:
-            plt.plot(self.fullwn,dfg.counts,'b')
-        
-            
-
-    #remove all CRs for each         
-    def removeCRs(self,threshold=200):
-
+    #remove all CRs for each DFG and BG      
+    def removeCRs(self,threshold=200): 
+        print('Removing cosmic rays from spectra...')
         #function that uses a median filter to identify a CR in a single DFG
-        def removeCRindDFG(dfg,threshold):
-            
+        def removeCRindDFG(dfg,threshold):   
             #choose how big of a window for the rolling median
             windowSize = 7
             medians = pandas.Series(dfg.counts).rolling(window = windowSize,center=True).median()
@@ -221,7 +139,6 @@ class Spectrum():
             #find difference of each point with the median of its window
             differences = dfg.counts-medians
             
-            
             #empty array to hold zero or one if point is a spike
             spike = np.zeros(len(differences),)
             for i in range(len(differences)):
@@ -230,14 +147,11 @@ class Spectrum():
                     print("Spike found at point index",i,"with wavenumber",dfg.wn[i],"cm^-1")
                   
             #if there any spikes found
-            if np.sum(spike) > 0:
-                
+            if np.sum(spike) > 0:   
                 #go through and replace the spike with the average on both sides
-                for i in range(len(spike)):          
-                    
+                for i in range(len(spike)):                  
                     #if the point needs to be replaced
-                    if spike[i] == 1:
-                        
+                    if spike[i] == 1:        
                         #check up to five points to the left for the edge or for an ok point
                         for j in range(5):
                             if (i-1-j) < 0:
@@ -246,8 +160,7 @@ class Spectrum():
                             else:
                                 if spike[i-1-j] == 0:
                                     left = dfg.counts[i-1-j] #or get the first acceptable point
-                                    break
-                        
+                                    break        
                         #check up to five points to the right for the edge or for an ok point        
                         for j in range(5):
                             if (i+j+1) >= len(spike):
@@ -256,8 +169,7 @@ class Spectrum():
                             else:
                                 if spike[i+1+j] == 0:
                                     right = dfg.counts[i+1+j] #or get the first acceptable point
-                                    break
-                        
+                                    break            
                         #get the average of the two or the value if its only one
                         tempValArray = np.array([])
                         tempValArray = np.append(tempValArray,left)
@@ -278,8 +190,37 @@ class Spectrum():
         for bg in self.bgs:
             removeCRindDFG(bg,threshold)
             
+    #find and subtract correct background        
+    def subtractBGs(self):
+        
+        print('Subtracting BGs from DFGs...')
+        
+        #create list to hold pre-bg subtracted dfgs
+        self.dfgsRaw = copy.deepcopy(self.dfgs)
+        
+        #go through each dfg
+        for dfg in self.dfgs:     
+            #identify background by finding median wavelength
+            dfgMedian = int(np.median(dfg.wl))
+            
+            #tracker for seeing if you found background
+            foundBG = False
+            
+            #go through each background, see if one with matching median is there
+            for bg in self.bgs:
+                if dfgMedian == int(np.median(bg.wl)):
+                    print("For dfg",dfg.name,"found",bg.name)
+                    dfg.counts = dfg.counts - bg.counts
+                    foundBG = True
+            
+            #if one wasn't found, print that        
+            if not foundBG:
+                print("No bg found for dfg",dfg.name)
+            
+           
     def padDFGs(self):
         
+        print('Padding DFGs with Zeros...')
         #dictionary to hold number of zeros to pad on either side
         padding = dict(det620=[0,409],det625=[58,351],det630=[116,293],
                        det635=[174,235],det640=[232,177],det645=[291,118],
@@ -300,16 +241,111 @@ class Spectrum():
             key = 'det' + str(int(np.median(dfg.wl)))
             dfg.counts = np.append(np.append(np.zeros(padding[key][0]),dfg.counts),
                                    np.zeros(padding[key][1]))
-
         
-
-            
-    def sumDFGs(self):
+    def plotFullDFGs(self):   
+        plt.figure()
+        for dfg in self.dfgsFull:
+            plt.plot(self.fullwn,dfg.counts)  
+        plt.title('Padded DFGs')
         
+    def sumFullDFGs(self):
+        print('Summing full DFGs...')
         self.dfgSum = np.zeros(853)
-        
         for dfg in self.dfgsFull:
             self.dfgSum = self.dfgSum + dfg.counts
+            
+    def plotSumDFGs(self):
+        plt.figure()
+        plt.plot(self.fullwn,self.dfgSum)
+        plt.title('Sum of DFGs')
+    
+            
+    def smoothDFGs(self,sigma=5):
+        print('Smoothing DFGs...')
+        self.dfgsPreSmoothed = copy.deepcopy(self.dfgsFull)
+        
+        for dfg in self.dfgsFull:
+            dfg.counts = gaussian_filter1d(dfg.counts,sigma)
+            
+    def plotSmoothRawDFGs(self):   
+        plt.figure()        
+        for dfg in self.dfgsPreSmoothed:
+            plt.plot(self.fullwn,dfg.counts,'ro')
+            
+        for dfg in self.dfgsFull:
+            plt.plot(self.fullwn,dfg.counts,'b')
+        plt.title('Smoothed and Raw DFGs')
+        
+
+        
+       
+    def findTruncateIndices(self,threshold=0.05):
+        print('Finding truncation thresholds at',threshold,'...')
+        #create list to hold indices
+        self.truncateIndices = []
+        
+        #go through each dfg
+        for dfg in self.dfgsFull:
+            
+            #find max
+            maxVal = dfg.counts.max()
+            
+            #find index of the max
+            maxIndex = dfg.counts.argmax()
+            
+            #find left and right indexes
+            leftIndex = (np.abs(dfg.counts[:maxIndex] - maxVal*threshold)).argmin()
+            rightIndex = maxIndex+(np.abs(dfg.counts[maxIndex:] - maxVal*threshold)).argmin()
+            
+            #add the found values to the list
+            self.truncateIndices = self.truncateIndices + [[leftIndex,rightIndex]]
+            
+    def truncateFullDFGs(self,gold):
+        print('Truncating DFGs...')
+        #copy dfgs into new list
+        self.dfgsFullTruncated = copy.deepcopy(self.dfgsFull)
+        
+        for i,dfg in enumerate(self.dfgsFullTruncated):       
+            dfg.counts[:gold.truncateIndices[i][0]] = 0
+            dfg.counts[gold.truncateIndices[i][1]:] = 0
+            
+    def plotTruncatedDFGs(self):
+        plt.figure()
+        for dfg in self.dfgsFullTruncated:
+            plt.plot(self.fullwn,dfg.counts,'b')  
+        plt.title('Truncated DFGs')
+        
+    def sumTruncatedDFGs(self):
+        print('Summing trancated DFGs...')
+        self.dfgTruncatedSum = np.zeros(853)
+        
+        for dfg in self.dfgsFullTruncated:
+            self.dfgTruncatedSum = self.dfgTruncatedSum + dfg.counts
+            
+    def plotSumTruncatedDFGs(self):
+        plt.figure()
+        plt.plot(self.fullwn,self.dfgTruncatedSum)
+        plt.title('Sum of truncated DFGs')
+    
+    def writeSumTruncatedWave(self,name):
+        print('Truncated, summed wave written to',name)
+        data = np.vstack((self.fullwn,self.dfgTruncatedSum)).transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',',header='wn,counts',comments='')
+    
+
+
+                   
+            
+            
+
+    
+
+        
+
+
+            
+
 
             
         

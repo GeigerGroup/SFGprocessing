@@ -8,21 +8,21 @@ Created on Thu Nov 23 19:38:56 2017
 
 from spectrum import Spectrum
 
+overallpath = '/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11192017'
+
 path = '/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11192017/goldend'
 
 gold = Spectrum(path)
 
 gold.subtractBGs()
 
-#gold.plotDFGs()
+gold.plotDFGs()
+
+gold.plotBGs()
 
 gold.padDFGs()
 
-#gold.plotFullDFGs()
-
-gold.sumDFGs()
-
-#gold.plotDFGsum()
+gold.plotFullDFGs()
 
 gold.smoothDFGs(5)
 
@@ -30,6 +30,14 @@ gold.plotSmoothRawDFGs()
 
 gold.findTruncateIndices()
 
-gold.truncateFullDFGs()
+gold.truncateFullDFGs(gold)
 
 gold.plotTruncatedDFGs()
+
+gold.sumTruncatedDFGs()
+
+gold.plotSumTruncatedDFGs()
+
+import os
+os.chdir(overallpath)
+gold.writeSumTruncatedWave('goldSummedTruncated.txt')
