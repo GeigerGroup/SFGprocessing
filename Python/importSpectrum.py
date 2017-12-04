@@ -10,10 +10,13 @@ from spectrum import Spectrum
 
 overallpath = '/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11192017'
 
-name = 'flowrun1.txt'
-path = '/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11192017/caf2_water/run1'
+name = 'flowrun2.txt'
+path = '/Users/pohno/Box Sync/Science/Data/SFG/Solstice/11192017/caf2_water/run2'
 
 spec = Spectrum(path)
+
+import os
+os.chdir(overallpath)
 
 spec.plotDFGs()
 
@@ -35,6 +38,9 @@ spec.plotFullDFGs()
 
 spec.sumFullDFGs()
 
+#uncomment to write sum of padded DFGs to file
+spec.writeSummedDFGs('flowrun2Raw.txt')
+
 spec.plotSumDFGs()
 
 spec.truncateFullDFGs(gold)
@@ -45,6 +51,4 @@ spec.sumTruncatedDFGs()
 
 spec.plotSumTruncatedDFGs()
 
-import os
-os.chdir(overallpath)
 spec.writeSumTruncatedWave(name)

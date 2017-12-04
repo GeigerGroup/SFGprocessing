@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 29 16:48:44 2017
+
+@author: pohno
+"""
+
+import matplotlib.pyplot as plt
+
+y = spec.dfgTruncatedSum
+x = spec.fullwn
+
+
+from scipy import signal
+
+import numpy as np
+
+yB3 = np.convolve(y,signal.boxcar(3),mode='same')/3
+yB5 = np.convolve(y,signal.boxcar(5),mode='same')/5
+yB10 = np.convolve(y,signal.boxcar(10),mode='same')/10
+
+
+plt.figure()
+plt.plot(x,y)
+plt.plot(x,yB3)
+plt.plot(x,yB5)
+plt.plot(x,yB10)
+

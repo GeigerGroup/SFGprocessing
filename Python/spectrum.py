@@ -216,7 +216,16 @@ class Spectrum():
             #if one wasn't found, print that        
             if not foundBG:
                 print("No bg found for dfg",dfg.name)
-            
+    
+    def writeDFGs(self,name):
+        data = np.zeros(444)
+        for dfg in self.dfgs:
+            data = np.vstack((data,dfg.wn))
+            data = np.vstack((data,dfg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
+
            
     def padDFGs(self):
         
@@ -241,6 +250,15 @@ class Spectrum():
             key = 'det' + str(int(np.median(dfg.wl)))
             dfg.counts = np.append(np.append(np.zeros(padding[key][0]),dfg.counts),
                                    np.zeros(padding[key][1]))
+            
+    def writePaddedDFGs(self,name):
+        data = self.fullwn
+        for dfg in self.dfgsFull:
+            data = np.vstack((data,dfg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
+        
         
     def plotFullDFGs(self):   
         plt.figure()
@@ -254,6 +272,13 @@ class Spectrum():
         for dfg in self.dfgsFull:
             self.dfgSum = self.dfgSum + dfg.counts
             
+    def writeSummedDFGs(self,name):
+        data = np.vstack((self.fullwn,self.dfgSum))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
+        
+            
     def plotSumDFGs(self):
         plt.figure()
         plt.plot(self.fullwn,self.dfgSum)
@@ -266,6 +291,14 @@ class Spectrum():
         
         for dfg in self.dfgsFull:
             dfg.counts = gaussian_filter1d(dfg.counts,sigma)
+            
+    def writeSmoothedDFGs(self,name):
+        data = self.fullwn
+        for dfg in self.dfgsFull:
+            data = np.vstack((data,dfg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
             
     def plotSmoothRawDFGs(self):   
         plt.figure()        
@@ -308,6 +341,14 @@ class Spectrum():
         for i,dfg in enumerate(self.dfgsFullTruncated):       
             dfg.counts[:gold.truncateIndices[i][0]] = 0
             dfg.counts[gold.truncateIndices[i][1]:] = 0
+            
+    def writeTruncatedDFGs(self,name):
+        data = self.fullwn
+        for dfg in self.dfgsFullTruncated:
+            data = np.vstack((data,dfg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
             
     def plotTruncatedDFGs(self):
         plt.figure()
