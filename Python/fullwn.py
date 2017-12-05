@@ -3,6 +3,10 @@
 """
 Created on Thu Nov 23 21:04:16 2017
 
+Object that is just an array that holds all the wavenumber values that the 
+acquisitions, once they are padded with zeros and/or properly summed up, 
+are plotted against.
+
 @author: pohno
 """
 
