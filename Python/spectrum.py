@@ -155,12 +155,9 @@ class Spectrum():
         self.bgs = []
         
         print('Importing DFGs and BGs...')
-        
-        #change the directory to the specified directory
-        os.chdir(path)
 
         #go through each file/directory
-        for f in os.listdir():
+        for f in os.listdir(path):
             
             #check if its a .txt file
             if f[-4:] == '.SPE':
