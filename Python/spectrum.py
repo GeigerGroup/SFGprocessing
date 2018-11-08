@@ -145,7 +145,7 @@ import copy
 
 class Spectrum():
     
-    def __init__(self,path):
+    def __init__(self,path,shift = 0):
         
         #store path of this sets of DFG positions
         self.path = path
@@ -163,15 +163,15 @@ class Spectrum():
         for f in os.listdir():
             
             #check if its a .txt file
-            if f[-4:] == '.txt':
-                #look at name of file/folder
+            if f[-4:] == '.SPE':
+                #look at first part of name of text files
                 name = f.split('.')[0]
         
                 if name.isdigit():
-                
+                    #if it is numbers assume it is DFG
                     self.dfgs = self.dfgs + [DFG(path + '/' + f,name)]
                 elif name[-2:] == 'bg':
-                
+                    #if it ends it bg assume it is a bg
                     self.bgs = self.bgs + [DFG(path + '/' + f,name)]
                 
         #sort by name
@@ -181,8 +181,16 @@ class Spectrum():
         #create array for fullwn
         fullwn = FullWN()
         
-        #give the fullwn array to itself
-        self.fullwn = fullwn.fullwn
+        #give the fullwn array to itself, calibrate
+        self.fullwn = fullwn.fullwn - shift
+        
+        #calibrate dfg wns
+        for dfg in self.dfgs:
+            dfg.wn = dfg.wn - shift
+        
+        #calibrate bg wns
+        for bg in self.bgs:
+            bg.wn = bg.wn - shift
         
         #output the DFGs that have been imported
         print('Has dfgs:')
@@ -238,12 +246,58 @@ class Spectrum():
             plt.plot(bg.wn,bg.counts)
             plt.title(bg.name)
             
+    #plot each sample DFG with its associated bg dfg
+    def plotDFGandBGsandGold(self,gold):
+        for dfg in self.dfgs:
+            plt.figure()
+            plt.plot(dfg.wn,dfg.counts)
+            
+            #identify background by finding median wavelength
+            dfgMedian = int(np.median(dfg.wl))
+            
+            #tracker for seeing if you found background
+            foundBG = False
+            
+            #go through each background, see if one with matching median is there
+            for bg in self.bgs:
+                if dfgMedian == int(np.median(bg.wl)):
+                    print("For dfg",dfg.name,"found",bg.name)
+                    plt.plot(bg.wn,bg.counts)
+                    foundBG = True
+            
+            #if one wasn't found, print that        
+            if not foundBG:
+                print("No bg found for dfg",dfg.name)
+                
+            #for dfgGold in gold.dfgs:
+            #   if dfgMedian == int(np.median(dfgGold.wl)):
+            #       plt.plot(dfgGold.wn,dfgGold.counts)
+            
+            plt.title(dfg.name)
+            
+    
+            
+    def plotIndPaddedDFGs(self):
+        plt.figure()
+        for dfg in self.dfgs:
+            plt.plot(dfg.wn,dfg.counts,'b.')
+        for dfg in self.dfgsFull:
+            plt.plot(self.fullwn,dfg.counts,'r')
+        plt.title('Padded and Ind DFGs')
+            
     #plot each DFG that has been padded with zeros against fullwn
     def plotFullDFGs(self):   
         plt.figure()
         for dfg in self.dfgsFull:
             plt.plot(self.fullwn,dfg.counts)  
         plt.title('Padded DFGs')
+        
+    #plot each DFG that has been padded with zeros against fullwn
+    def plotFullBGs(self):   
+        plt.figure()
+        for bg in self.bgsFull:
+            plt.plot(self.fullwn,bg.counts)  
+        plt.title('Padded BGs')
     
     #plot the sum of all the padded DFGs against fullwn    
     def plotSumDFG(self):
@@ -265,7 +319,7 @@ class Spectrum():
     def plotTruncatedDFGs(self):
         plt.figure()
         for dfg in self.dfgsFullTruncated:
-            plt.plot(self.fullwn,dfg.counts,'b')  
+            plt.plot(self.fullwn,dfg.counts)  
         plt.title('Truncated DFGs')
         
     #plot the sum of the truncated DFGs
@@ -287,12 +341,30 @@ class Spectrum():
         data = data.transpose()
         fmt = '%.5f'
         np.savetxt(name,data,fmt,delimiter=',')
+        
+    def writeBGs(self,name):
+        data = np.zeros(444)
+        for bg in self.bgs:
+            data = np.vstack((data,bg.wn))
+            data = np.vstack((data,bg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
     
     #write each padded DFG to file    
     def writeFullDFGs(self,name):
         data = self.fullwn
         for dfg in self.dfgsFull:
             data = np.vstack((data,dfg.counts))
+        data = data.transpose()
+        fmt = '%.5f'
+        np.savetxt(name,data,fmt,delimiter=',')
+        
+    #write each padded BG to file    
+    def writeFullBGs(self,name):
+        data = self.fullwn
+        for bg in self.bgsFull:
+            data = np.vstack((data,bg.counts))
         data = data.transpose()
         fmt = '%.5f'
         np.savetxt(name,data,fmt,delimiter=',')
@@ -437,16 +509,20 @@ class Spectrum():
         
         print('Padding DFGs with Zeros...')
         #dictionary to hold number of zeros to pad on either side
-        padding = dict(det620=[0,409],det625=[58,351],det630=[116,293],
-                       det635=[174,235],det640=[232,177],det645=[291,118],
-                       det655=[409,0])
-        #for 620 add 409 after
-        #for 625 add 58 before and 351 after
-        #for 630 add 116 before and 293 after
-        #for 635 add 174 before and 235 after
-        #for 640 add 232 before and 177 after
-        #for 645 add 291 before and 118 after
-        #for 655 add 409 before
+        padding = dict(det615=[0,467],det620=[58,409],det625=[116,351],det630=[174,293],
+                       det635=[232,235],det640=[290,177],det645=[349,118],
+                       det655=[467,0])
+        
+        #length of fullwn is 911
+        
+        #for 615 add 467 after
+        #for 620 add 58 before and 409 after
+        #for 625 add 116 before and 351 after
+        #for 630 add 174 before and 293 after
+        #for 635 add 232 before and 235 after
+        #for 640 add 290 before adn 177 after
+        #for 645 add 349 before adn 118 after
+        #for 655 add 467 before
         
         #copy dfgs into new list
         self.dfgsFull = copy.deepcopy(self.dfgs)
@@ -457,10 +533,39 @@ class Spectrum():
             dfg.counts = np.append(np.append(np.zeros(padding[key][0]),dfg.counts),
                                    np.zeros(padding[key][1]))
             
+    #pad each DFG with zeros before and/or after so they align and can be summed up
+    def padBGs(self):
+        
+        print('Padding ΒGs with Zeros...')
+        #dictionary to hold number of zeros to pad on either side
+        padding = dict(det615=[0,467],det620=[58,409],det625=[116,351],det630=[174,293],
+                       det635=[232,235],det640=[290,177],det645=[349,118],
+                       det655=[467,0])
+        
+        #length of fullwn is 911
+        
+        #for 615 add 467 after
+        #for 620 add 58 before and 409 after
+        #for 625 add 116 before and 351 after
+        #for 630 add 174 before and 293 after
+        #for 635 add 232 before and 235 after
+        #for 640 add 290 before adn 177 after
+        #for 645 add 349 before adn 118 after
+        #for 655 add 467 before
+        
+        #copy dfgs into new list
+        self.bgsFull = copy.deepcopy(self.bgs)
+        
+        for bg in self.bgsFull:
+            
+            key = 'det' + str(int(np.median(bg.wl)))
+            bg.counts = np.append(np.append(np.zeros(padding[key][0]),bg.counts),
+                                   np.zeros(padding[key][1]))
+            
     #sum up the padded DFGs
     def sumFullDFGs(self):
         print('Summing full DFGs...')
-        self.dfgSum = np.zeros(853)
+        self.dfgSum = np.zeros(911)
         for dfg in self.dfgsFull:
             self.dfgSum = self.dfgSum + dfg.counts
             
@@ -489,8 +594,28 @@ class Spectrum():
             maxIndex = dfg.counts.argmax()
             
             #find left and right indexes
-            leftIndex = (np.abs(dfg.counts[:maxIndex] - maxVal*threshold)).argmin()
-            rightIndex = maxIndex+(np.abs(dfg.counts[maxIndex:] - maxVal*threshold)).argmin()
+            #set both as zero to start
+            leftIndex = []
+            rightIndex = []
+            
+            #go through one half
+            for i in np.arange(maxIndex,len(dfg.counts)-1,1):
+                #find first point less than threshold and choose
+                if dfg.counts[i]-maxVal*threshold < 0:
+                    rightIndex = i
+                    break
+            #if nothing chosen use minimum
+            if not rightIndex:
+                rightIndex = dfg.counts[maxIndex:].argmin()
+            
+            #go through other half
+            for i in np.arange(maxIndex,0,-1):
+                #find first point less than threshold and choose
+                if dfg.counts[i]-maxVal*threshold < 0:
+                    leftIndex = i
+                    break
+            if not leftIndex:
+                leftIndex = dfg.counts[:maxIndex].argmin()
             
             #add the found values to the list
             self.truncateIndices = self.truncateIndices + [[leftIndex,rightIndex]]
@@ -510,7 +635,7 @@ class Spectrum():
     #sum up these truncated DFGs
     def sumTruncatedDFGs(self):
         print('Summing truncated DFGs...')
-        self.dfgTruncatedSum = np.zeros(853)
+        self.dfgTruncatedSum = np.zeros(len(self.fullwn))
         
         for dfg in self.dfgsFullTruncated:
             self.dfgTruncatedSum = self.dfgTruncatedSum + dfg.counts

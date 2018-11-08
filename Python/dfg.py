@@ -19,6 +19,9 @@ photons that are read in. The wn property is the wl array converted to wavelengt
 @author: pohno
 """
 
+#import winspec
+from winspec import SpeFile
+
 #import numpy
 import numpy as np
 
@@ -30,21 +33,12 @@ class DFG():
         self.name = name
         
         #read in file
-        file = open(path,'r')
+        f = SpeFile(path)
         
-        #initialize array for wavelengths and counts
-        wavelengths = np.array([])
-        counts = np.array([])
+        #get data from file
+        self.wl  = f.xaxis
+        self.counts= f.data[0].flatten().astype(float)
         
-        #go through each line in datafile and append to arrays
-        for line in file:
-            fields = line.split()
-            wavelengths = np.append(wavelengths,[float(fields[0])])
-            counts = np.append(counts,[float(fields[3])])
-            
-        #set attributes of object    
-        self.wl = wavelengths
-        self.counts = counts
         
         #convert wavelength values to wavenumber
         self.wn = self.convertWLtoWN(self.wl,795)
