@@ -508,7 +508,7 @@ class Spectrum():
         #dictionary to hold number of zeros to pad on either side
         padding = dict(det615=[0,467],det620=[58,409],det625=[116,351],det630=[174,293],
                        det635=[232,235],det640=[290,177],det645=[349,118],
-                       det650=[407,60],det655=[467,0])
+                       det655=[467,0])
         
         #length of fullwn is 911
         
@@ -536,7 +536,7 @@ class Spectrum():
         print('Padding ΒGs with Zeros...')
         #dictionary to hold number of zeros to pad on either side
         padding = dict(det615=[0,467],det620=[58,409],det625=[116,351],det630=[174,293],
-                       det635=[232,235],det640=[290,177],det645=[349,118],det650=[407,60],
+                       det635=[232,235],det640=[290,177],det645=[349,118],
                        det655=[467,0])
         
         #length of fullwn is 911
