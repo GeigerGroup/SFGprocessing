@@ -221,6 +221,7 @@ class Spectrum():
         for dfg in self.dfgs:
             plt.plot(dfg.wn,dfg.counts)  
         plt.title('DFGs')
+        plt.show()
             
     #plot all background DFGs           
     def plotBGs(self):
@@ -228,6 +229,7 @@ class Spectrum():
         for bg in self.bgs:
             plt.plot(bg.wn,bg.counts)
         plt.title('BGs')
+        plt.show()
             
     #plot each sample DFG individually
     def plotIndDFGs(self):     
@@ -235,6 +237,7 @@ class Spectrum():
             plt.figure()
             plt.plot(dfg.wn,dfg.counts)
             plt.title(dfg.name)
+            plt.show()
     
     #plot each background DFG individually       
     def plotIndBGs(self):        
@@ -242,12 +245,14 @@ class Spectrum():
             plt.figure()
             plt.plot(bg.wn,bg.counts)
             plt.title(bg.name)
+            plt.show()
             
     #plot each sample DFG with its associated bg dfg
     def plotDFGandBGsandGold(self,gold):
         for dfg in self.dfgs:
             plt.figure()
             plt.plot(dfg.wn,dfg.counts)
+            plt.show()
             
             #identify background by finding median wavelength
             dfgMedian = int(np.median(dfg.wl))
@@ -281,6 +286,7 @@ class Spectrum():
         for dfg in self.dfgsFull:
             plt.plot(self.fullwn,dfg.counts,'r')
         plt.title('Padded and Ind DFGs')
+        plt.show()
             
     #plot each DFG that has been padded with zeros against fullwn
     def plotFullDFGs(self):   
@@ -288,6 +294,7 @@ class Spectrum():
         for dfg in self.dfgsFull:
             plt.plot(self.fullwn,dfg.counts)  
         plt.title('Padded DFGs')
+        plt.show()
         
     #plot each DFG that has been padded with zeros against fullwn
     def plotFullBGs(self):   
@@ -295,22 +302,26 @@ class Spectrum():
         for bg in self.bgsFull:
             plt.plot(self.fullwn,bg.counts)  
         plt.title('Padded BGs')
+        plt.show()
     
     #plot the sum of all the padded DFGs against fullwn    
     def plotSumDFG(self):
         plt.figure()
         plt.plot(self.fullwn,self.dfgSum)
         plt.title('Sum of DFGs')
+        plt.show()
     
     #plot the smoothed and the raw padded DFGs against fullwn    
     def plotSmoothRawDFGs(self):   
         plt.figure()        
         for dfg in self.dfgsPreSmoothed:
             plt.plot(self.fullwn,dfg.counts,'ro')
+        plt.show()
             
         for dfg in self.dfgsFull:
             plt.plot(self.fullwn,dfg.counts,'b')
         plt.title('Smoothed and Raw DFGs')
+        plt.show()
         
     #plot the DFGs that have been truncated according to the gold reference
     def plotTruncatedDFGs(self):
@@ -318,12 +329,14 @@ class Spectrum():
         for dfg in self.dfgsFullTruncated:
             plt.plot(self.fullwn,dfg.counts)  
         plt.title('Truncated DFGs')
+        plt.show()
         
     #plot the sum of the truncated DFGs
     def plotSumTruncatedDFG(self):
         plt.figure()
         plt.plot(self.fullwn,self.dfgTruncatedSum)
         plt.title('Sum of truncated DFGs')
+        plt.show()
         
         
     #WRITING METHODS
